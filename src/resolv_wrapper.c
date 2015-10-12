@@ -340,7 +340,7 @@ static ssize_t rwrap_fake_header(uint8_t **header_blob, size_t remaining,
 	h->id = res_randomid();		/* random query ID */
 	h->qr = 1;			/* response flag */
 	h->rd = 1;			/* recursion desired */
-	h->ra = 1;			/* resursion available */
+	h->ra = 1;			/* recursion available */
 
 	h->qdcount = htons(1);		/* no. of questions */
 	h->ancount = htons(ancount);	/* no. of answers */
@@ -911,7 +911,7 @@ static ssize_t rwrap_fake_answer(struct rwrap_fake_rr *rrs,
 /* Reads in a file in the following format:
  * TYPE RDATA
  *
- * Malformed entried are silently skipped.
+ * Malformed entries are silently skipped.
  * Allocates answer buffer of size anslen that has to be freed after use.
  */
 static int rwrap_res_fake_hosts(const char *hostfile,
