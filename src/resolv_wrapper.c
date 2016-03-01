@@ -36,7 +36,11 @@
 
 #include <errno.h>
 #include <arpa/inet.h>
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif /* HAVE_ARPA_NAMESER_H */
 #include <netinet/in.h>
+#include <sys/socket.h>
 #include <sys/types.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -1421,8 +1425,8 @@ static int rwrap_res_ninit(struct __res_state *state)
 			state->nscount = 0;
 			memset(state->nsaddr_list, 0, sizeof(state->nsaddr_list));
 
-			state->_u._ext.nscount = 0;
 #ifdef HAVE_RESOLV_IPV6_NSADDRS
+			state->_u._ext.nscount = 0;
 			for (i = 0; i < state->_u._ext.nscount; i++) {
 				SAFE_FREE(state->_u._ext.nsaddrs[i]);
 			}

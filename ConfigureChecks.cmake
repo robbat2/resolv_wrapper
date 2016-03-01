@@ -49,6 +49,7 @@ endif(CMAKE_COMPILER_IS_GNUCC AND NOT MINGW AND NOT OS2)
 # HEADERS
 check_include_file(sys/types.h HAVE_SYS_TYPES_H)
 check_include_file(resolv.h HAVE_RESOLV_H)
+check_include_file(arpa/nameser.h HAVE_ARPA_NAMESER_H)
 
 # FUNCTIONS
 set(CMAKE_REQUIRED_LIBRARIES)
