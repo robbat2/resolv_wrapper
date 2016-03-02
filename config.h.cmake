@@ -15,6 +15,7 @@
 /************************** HEADER FILES *************************/
 
 #cmakedefine HAVE_SYS_TYPES_H 1
+#cmakedefine HAVE_RESOLV_H 1
 #cmakedefine HAVE_ARPA_NAMESER_H 1
 
 /*************************** FUNCTIONS ***************************/
