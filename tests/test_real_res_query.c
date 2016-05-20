@@ -130,6 +130,42 @@ static void test_res_query_a_record(void **state)
 	assert_string_equal(addr, "78.46.80.163");
 }
 
+static void test_res_query_ns_record(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE] = { 0 };
+	char addr[INET_ADDRSTRLEN];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "cwrap.org", ns_c_in, ns_t_ns,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 150);
+
+	printf("dump answer:\n");
+	dump_data(answer, rv);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+	/* The query must finish w/o an error, have two answers and the answer
+	 * must be a parseable RR of type A and have the address that our
+	 * fake hosts file contains
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 2);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_ns);
+	assert_non_null(inet_ntop(AF_INET, ns_rr_rdata(rr),
+			addr, sizeof(addr)));
+	/*assert_string_equal(addr, "3.110.115.50");*/
+}
+
 static void test_res_query_srv_record(void **state)
 {
 	int rv;
@@ -191,6 +227,7 @@ int main(void)
 
 	const struct CMUnitTest real_tests[] = {
 		cmocka_unit_test(test_res_query_a_record),
+		cmocka_unit_test(test_res_query_ns_record),
 		cmocka_unit_test(test_res_query_srv_record),
 	};
 
