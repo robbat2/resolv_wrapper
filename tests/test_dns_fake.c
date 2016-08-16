@@ -49,6 +49,7 @@
 #include <resolv.h>
 
 #define ANSIZE 256
+#define ns_t_uri 256
 
 static void test_res_fake_a_query(void **state)
 {
@@ -351,6 +352,110 @@ static void test_res_fake_srv_query_minimal(void **state)
 	assert_string_equal(addr, "127.0.0.23");
 }
 
+static void test_res_fake_uri_query(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+	const uint8_t *rrdata;
+	int prio;
+	int weight;
+	char uri[MAXDNAME];
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "_vpn.cwrap.org", ns_c_in, ns_t_uri,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 100);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type SRV and have the priority, weight,
+	 * port and hostname as in the fake hosts file
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_uri);
+
+	rrdata = ns_rr_rdata(rr);
+	NS_GET16(prio, rrdata);
+	NS_GET16(weight, rrdata);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				uri, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_int_equal(prio, 2);
+	assert_int_equal(weight, 5);
+	assert_string_equal(uri, "https://vpn.cwrap.org/VPN");
+}
+
+/*
+ * Test the case of a URI record query where the
+ * fake hosts file entry is minimal in the sense
+ * that it omits the priority and weight entries.
+ * The server then fills in some default values.
+ */
+static void test_res_fake_uri_query_minimal(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+	const uint8_t *rrdata;
+	int prio;
+	int weight;
+	char uri[MAXDNAME];
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "_ftp.cwrap.org", ns_c_in, ns_t_uri,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 256);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type SRV and have the priority, weight,
+	 * port and hostname as in the fake hosts file
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_uri);
+
+	rrdata = ns_rr_rdata(rr);
+	NS_GET16(prio, rrdata);
+	NS_GET16(weight, rrdata);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				uri, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_int_equal(prio, 1);
+	assert_int_equal(weight, 100);
+	assert_string_equal(uri, "ftp://ftp.cwrap.org/public");
+}
+
 static void test_res_fake_soa_query(void **state)
 {
 	int rv;
@@ -572,6 +677,8 @@ int main(void)
 		cmocka_unit_test(test_res_fake_aaaa_query_notfound),
 		cmocka_unit_test(test_res_fake_srv_query),
 		cmocka_unit_test(test_res_fake_srv_query_minimal),
+		cmocka_unit_test(test_res_fake_uri_query),
+		cmocka_unit_test(test_res_fake_uri_query_minimal),
 		cmocka_unit_test(test_res_fake_soa_query),
 		cmocka_unit_test(test_res_fake_cname_query),
 		cmocka_unit_test(test_res_fake_a_via_cname),

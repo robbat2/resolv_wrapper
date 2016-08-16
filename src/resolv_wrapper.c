@@ -73,6 +73,8 @@
 #define ns_name_compress dn_comp
 #endif
 
+#define ns_t_uri 256
+
 enum rwrap_dbglvl_e {
 	RWRAP_LOG_ERROR = 0,
 	RWRAP_LOG_WARN,
@@ -156,12 +158,20 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
  */
 #define DFL_SRV_PRIO	1
 #define DFL_SRV_WEIGHT	100
+#define DFL_URI_PRIO	1
+#define DFL_URI_WEIGHT	100
 
 struct rwrap_srv_rrdata {
 	uint16_t port;
 	uint16_t prio;
 	uint16_t weight;
 	char hostname[MAXDNAME];
+};
+
+struct rwrap_uri_rrdata {
+	uint16_t prio;
+	uint16_t weight;
+	char uri[MAXDNAME];
 };
 
 struct rwrap_soa_rrdata {
@@ -179,6 +189,7 @@ struct rwrap_fake_rr {
 		struct in_addr a_rec;
 		struct in6_addr aaaa_rec;
 		struct rwrap_srv_rrdata srv_rec;
+		struct rwrap_uri_rrdata uri_rec;
 		struct rwrap_soa_rrdata soa_rec;
 		char cname_rec[MAXDNAME];
 	} rrdata;
@@ -277,6 +288,42 @@ static int rwrap_create_fake_srv_rr(const char *key,
 
 	memcpy(rr->key, key, strlen(key) + 1);
 	rr->type = ns_t_srv;
+	return 0;
+}
+
+static int rwrap_create_fake_uri_rr(const char *key,
+				    const char *value,
+				    struct rwrap_fake_rr *rr)
+{
+	char *str_prio;
+	char *str_weight;
+	const char *uri;
+
+	/* parse the value into priority, weight, and uri
+	 * and check the validity */
+	uri = value;
+	NEXT_KEY(uri, str_prio);
+	NEXT_KEY(str_prio, str_weight);
+	if (uri == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed URI entry [%s]\n", value);
+		return -1;
+	}
+
+	if (str_prio) {
+		rr->rrdata.uri_rec.prio = atoi(str_prio);
+	} else {
+		rr->rrdata.uri_rec.prio = DFL_URI_PRIO;
+	}
+	if (str_weight) {
+		rr->rrdata.uri_rec.weight = atoi(str_weight);
+	} else {
+		rr->rrdata.uri_rec.weight = DFL_URI_WEIGHT;
+	}
+	memcpy(rr->rrdata.uri_rec.uri, uri, strlen(uri) + 1);
+
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_uri;
 	return 0;
 }
 
@@ -564,6 +611,46 @@ static ssize_t rwrap_fake_srv(struct rwrap_fake_rr *rr,
 	return resp_size;
 }
 
+static ssize_t rwrap_fake_uri(struct rwrap_fake_rr *rr,
+			      uint8_t *answer,
+			      size_t anslen)
+{
+	uint8_t *a = answer;
+	ssize_t resp_size;
+	size_t rdata_size;
+	unsigned char uri_compressed[MAXDNAME];
+	ssize_t compressed_len;
+
+	if (rr == NULL || rr->type != ns_t_uri) {
+		RWRAP_LOG(RWRAP_LOG_ERROR,
+			  "Malformed record, no or wrong value!\n");
+		return -1;
+	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding URI RR");
+	rdata_size = 3 * sizeof(uint16_t);
+
+	/* Prepare the data to write */
+	compressed_len = ns_name_compress(rr->rrdata.uri_rec.uri,
+					  uri_compressed, MAXDNAME,
+					  NULL, NULL);
+	if (compressed_len < 0) {
+		return -1;
+	}
+	rdata_size += compressed_len;
+
+	resp_size = rwrap_fake_rdata_common(ns_t_uri, rdata_size,
+					    rr->key, anslen, &a);
+	if (resp_size < 0) {
+		return -1;
+	}
+
+	NS_PUT16(rr->rrdata.uri_rec.prio, a);
+	NS_PUT16(rr->rrdata.uri_rec.weight, a);
+	memcpy(a, uri_compressed, compressed_len);
+
+	return resp_size;
+}
+
 static ssize_t rwrap_fake_soa(struct rwrap_fake_rr *rr,
 			      uint8_t *answer,
 			      size_t anslen)
@@ -770,6 +857,10 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 						rr + 1);
 			}
 			break;
+		} else if (TYPE_MATCH(type, ns_t_uri,
+				      rec_type, "URI", key, query)) {
+			rc = rwrap_create_fake_uri_rr(key, value, rr);
+			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
 				      rec_type, "SOA", key, query)) {
 			rc = rwrap_create_fake_soa_rr(key, value, rr);
@@ -837,6 +928,7 @@ static inline bool rwrap_known_type(int type)
 	case ns_t_aaaa:
 	case ns_t_ns:
 	case ns_t_srv:
+	case ns_t_uri:
 	case ns_t_soa:
 	case ns_t_cname:
 		return true;
@@ -900,6 +992,9 @@ static ssize_t rwrap_add_rr(struct rwrap_fake_rr *rr,
 		break;
 	case ns_t_srv:
 		resp_data = rwrap_fake_srv(rr, answer, anslen);
+		break;
+	case ns_t_uri:
+		resp_data = rwrap_fake_uri(rr, answer, anslen);
 		break;
 	case ns_t_soa:
 		resp_data = rwrap_fake_soa(rr, answer, anslen);
