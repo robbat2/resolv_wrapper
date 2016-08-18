@@ -192,6 +192,7 @@ struct rwrap_fake_rr {
 		struct rwrap_uri_rrdata uri_rec;
 		struct rwrap_soa_rrdata soa_rec;
 		char cname_rec[MAXDNAME];
+		char ptr_rec[MAXDNAME];
 	} rrdata;
 
 	char key[MAXDNAME];
@@ -378,6 +379,16 @@ static int rwrap_create_fake_cname_rr(const char *key,
 	memcpy(rr->rrdata.cname_rec , value, strlen(value) + 1);
 	memcpy(rr->key, key, strlen(key) + 1);
 	rr->type = ns_t_cname;
+	return 0;
+}
+
+static int rwrap_create_fake_ptr_rr(const char *key,
+				    const char *value,
+				    struct rwrap_fake_rr *rr)
+{
+	memcpy(rr->rrdata.ptr_rec , value, strlen(value) + 1);
+	memcpy(rr->key, key, strlen(key) + 1);
+	rr->type = ns_t_ptr;
 	return 0;
 }
 
@@ -734,6 +745,40 @@ static ssize_t rwrap_fake_cname(struct rwrap_fake_rr *rr,
 	return resp_size;
 }
 
+static ssize_t rwrap_fake_ptr(struct rwrap_fake_rr *rr,
+			      uint8_t *answer,
+			      size_t anslen)
+{
+	uint8_t *a = answer;
+	ssize_t rdata_size;
+	ssize_t resp_size;
+	unsigned char hostname_compressed[MAXDNAME];
+
+	if (rr->type != ns_t_ptr) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
+		return -1;
+	}
+	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding PTR RR");
+
+	/* Prepare the data to write */
+	rdata_size = ns_name_compress(rr->rrdata.ptr_rec,
+				      hostname_compressed, MAXDNAME,
+				      NULL, NULL);
+	if (rdata_size < 0) {
+		return -1;
+	}
+
+	resp_size = rwrap_fake_rdata_common(ns_t_ptr, rdata_size,
+					    rr->key, anslen, &a);
+	if (resp_size < 0) {
+		return -1;
+	}
+
+	memcpy(a, hostname_compressed, rdata_size);
+
+	return resp_size;
+}
+
 #define RESOLV_MATCH(line, name) \
 	(strncmp(line, name, sizeof(name) - 1) == 0 && \
 	(line[sizeof(name) - 1] == ' ' || \
@@ -873,6 +918,10 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 							 value, rr + 1);
 			}
 			break;
+		} else if (TYPE_MATCH(type, ns_t_ptr,
+				      rec_type, "PTR", key, query)) {
+			rc = rwrap_create_fake_ptr_rr(key, value, rr);
+			break;
 		}
 	}
 
@@ -924,6 +973,7 @@ static inline bool rwrap_known_type(int type)
 	case ns_t_uri:
 	case ns_t_soa:
 	case ns_t_cname:
+	case ns_t_ptr:
 		return true;
 	}
 
@@ -999,6 +1049,9 @@ static ssize_t rwrap_add_rr(struct rwrap_fake_rr *rr,
 		break;
 	case ns_t_cname:
 		resp_data = rwrap_fake_cname(rr, answer, anslen);
+		break;
+	case ns_t_ptr:
+		resp_data = rwrap_fake_ptr(rr, answer, anslen);
 		break;
 	default:
 		return -1;

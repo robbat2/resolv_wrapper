@@ -664,6 +664,49 @@ static void test_res_fake_a_via_cname(void **state)
 	assert_string_equal(addr, "127.0.0.22");
 }
 
+static void test_res_fake_ptr_query(void **state)
+{
+	int rv;
+	struct __res_state dnsstate;
+	unsigned char answer[ANSIZE];
+	const uint8_t *rrdata;
+	char ptrname[MAXDNAME];
+	ns_msg handle;
+	ns_rr rr;   /* expanded resource record */
+
+	(void) state; /* unused */
+
+	memset(&dnsstate, 0, sizeof(struct __res_state));
+	rv = res_ninit(&dnsstate);
+	assert_int_equal(rv, 0);
+
+	rv = res_nquery(&dnsstate, "22.0.0.127.in-addr.arpa", ns_c_in, ns_t_ptr,
+			answer, sizeof(answer));
+	assert_in_range(rv, 1, 100);
+
+	ns_initparse(answer, sizeof(answer), &handle);
+
+	/*
+	 * The query must finish w/o an error, have one answer and the answer
+	 * must be a parseable RR of type PTR and have the name that our
+	 * fake hosts file contains
+	 */
+	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_ptr);
+
+	rrdata = ns_rr_rdata(rr);
+
+	rv = ns_name_uncompress(ns_msg_base(handle),
+				ns_msg_end(handle),
+				rrdata,
+				ptrname, MAXDNAME);
+	assert_int_not_equal(rv, -1);
+
+	assert_string_equal(ptrname, "www.cwrap.org");
+}
+
 int main(void)
 {
 	int rc;
@@ -682,6 +725,7 @@ int main(void)
 		cmocka_unit_test(test_res_fake_soa_query),
 		cmocka_unit_test(test_res_fake_cname_query),
 		cmocka_unit_test(test_res_fake_a_via_cname),
+		cmocka_unit_test(test_res_fake_ptr_query),
 	};
 
 	rc = cmocka_run_group_tests(fake_tests, NULL, NULL);
