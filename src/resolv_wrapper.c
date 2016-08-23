@@ -625,8 +625,7 @@ static ssize_t rwrap_fake_uri(struct rwrap_fake_rr *rr,
 	uint8_t *a = answer;
 	ssize_t resp_size;
 	size_t rdata_size;
-	unsigned char uri_compressed[MAXDNAME];
-	ssize_t compressed_len;
+	size_t uri_len;
 
 	if (rr->type != ns_t_uri) {
 		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
@@ -634,15 +633,8 @@ static ssize_t rwrap_fake_uri(struct rwrap_fake_rr *rr,
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding URI RR");
 	rdata_size = 3 * sizeof(uint16_t);
-
-	/* Prepare the data to write */
-	compressed_len = ns_name_compress(rr->rrdata.uri_rec.uri,
-					  uri_compressed, MAXDNAME,
-					  NULL, NULL);
-	if (compressed_len < 0) {
-		return -1;
-	}
-	rdata_size += compressed_len;
+	uri_len = strlen(rr->rrdata.uri_rec.uri) + 1;
+	rdata_size += uri_len;
 
 	resp_size = rwrap_fake_rdata_common(ns_t_uri, rdata_size,
 					    rr->key, anslen, &a);
@@ -652,7 +644,7 @@ static ssize_t rwrap_fake_uri(struct rwrap_fake_rr *rr,
 
 	NS_PUT16(rr->rrdata.uri_rec.prio, a);
 	NS_PUT16(rr->rrdata.uri_rec.weight, a);
-	memcpy(a, uri_compressed, compressed_len);
+	memcpy(a, rr->rrdata.uri_rec.uri, uri_len);
 
 	return resp_size;
 }

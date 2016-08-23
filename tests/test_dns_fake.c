@@ -362,7 +362,6 @@ static void test_res_fake_uri_query(void **state)
 	const uint8_t *rrdata;
 	int prio;
 	int weight;
-	char uri[MAXDNAME];
 
 	(void) state; /* unused */
 
@@ -378,8 +377,8 @@ static void test_res_fake_uri_query(void **state)
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
-	 * must be a parseable RR of type SRV and have the priority, weight,
-	 * port and hostname as in the fake hosts file
+	 * must be a parseable RR of type URI and have the priority, weight, and
+	 * URI string as in the hosts file.
 	 */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
@@ -390,15 +389,9 @@ static void test_res_fake_uri_query(void **state)
 	NS_GET16(prio, rrdata);
 	NS_GET16(weight, rrdata);
 
-	rv = ns_name_uncompress(ns_msg_base(handle),
-				ns_msg_end(handle),
-				rrdata,
-				uri, MAXDNAME);
-	assert_int_not_equal(rv, -1);
-
 	assert_int_equal(prio, 2);
 	assert_int_equal(weight, 5);
-	assert_string_equal(uri, "https://vpn.cwrap.org/VPN");
+	assert_string_equal(rrdata, "https://vpn.cwrap.org/VPN");
 }
 
 /*
@@ -417,7 +410,6 @@ static void test_res_fake_uri_query_minimal(void **state)
 	const uint8_t *rrdata;
 	int prio;
 	int weight;
-	char uri[MAXDNAME];
 
 	(void) state; /* unused */
 
@@ -433,8 +425,8 @@ static void test_res_fake_uri_query_minimal(void **state)
 
 	/*
 	 * The query must finish w/o an error, have one answer and the answer
-	 * must be a parseable RR of type SRV and have the priority, weight,
-	 * port and hostname as in the fake hosts file
+	 * must be a parseable RR of type URI and have the priority, weight, and
+	 * URI string as in the fake hosts file
 	 */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
 	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
@@ -445,15 +437,9 @@ static void test_res_fake_uri_query_minimal(void **state)
 	NS_GET16(prio, rrdata);
 	NS_GET16(weight, rrdata);
 
-	rv = ns_name_uncompress(ns_msg_base(handle),
-				ns_msg_end(handle),
-				rrdata,
-				uri, MAXDNAME);
-	assert_int_not_equal(rv, -1);
-
 	assert_int_equal(prio, 1);
 	assert_int_equal(weight, 100);
-	assert_string_equal(uri, "ftp://ftp.cwrap.org/public");
+	assert_string_equal(rrdata, "ftp://ftp.cwrap.org/public");
 }
 
 static void test_res_fake_soa_query(void **state)
