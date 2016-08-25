@@ -151,7 +151,7 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	}							\
 } while(0);
 
-#define RWRAP_MAX_RECURSION 5
+#define RWRAP_MAX_RECURSION 64
 
 /* Priority and weight can be omitted from the hosts file, but need to be part
  * of the output
@@ -786,6 +786,19 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 			    const char *query, int type,
 			    struct rwrap_fake_rr *rr);
 
+static int rwrap_uri_recurse(const char *hostfile, unsigned recursion,
+			     const char *query, struct rwrap_fake_rr *rr)
+{
+	int rc;
+
+	rc = rwrap_get_record(hostfile, recursion, query, ns_t_uri, rr);
+	if (rc == ENOENT) {
+		rc = 0;
+	}
+
+	return rc;
+}
+
 static int rwrap_srv_recurse(const char *hostfile, unsigned recursion,
 			     const char *query, struct rwrap_fake_rr *rr)
 {
@@ -826,6 +839,7 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 	char *key = NULL;
 	char *value = NULL;
 	int rc = ENOENT;
+	unsigned num_uris = 0;
 
 	if (recursion >= RWRAP_MAX_RECURSION) {
 		RWRAP_LOG(RWRAP_LOG_ERROR, "Recursed too deep!\n");
@@ -867,6 +881,18 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		}
 		q[0] = '\0';
 
+		if (type == ns_t_uri && recursion > 0) {
+			/* Skip non-URI records. */
+			if (!TYPE_MATCH(type, ns_t_uri, rec_type, "URI", key, query)) {
+				continue;
+			}
+			/* Skip previous records based on the recurse depth. */
+			num_uris++;
+			if (num_uris <= recursion) {
+				continue;
+			}
+		}
+
 		if (TYPE_MATCH(type, ns_t_a, rec_type, "A", key, query)) {
 			rc = rwrap_create_fake_a_rr(key, value, rr);
 			break;
@@ -890,6 +916,10 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 		} else if (TYPE_MATCH(type, ns_t_uri,
 				      rec_type, "URI", key, query)) {
 			rc = rwrap_create_fake_uri_rr(key, value, rr);
+			if (rc == 0) {
+				/* Recurse to collect multiple URI answers under a single key. */
+				rc = rwrap_uri_recurse(hostfile, recursion + 1, key, rr + 1);
+			}
 			break;
 		} else if (TYPE_MATCH(type, ns_t_soa,
 				      rec_type, "SOA", key, query)) {
@@ -976,6 +1006,17 @@ static int rwrap_ancount(struct rwrap_fake_rr *rrs, int qtype)
 {
 	int i;
 	int ancount = 0;
+
+	/* For URI return the number of URIs. */
+	if (qtype == ns_t_uri) {
+		for (i = 0; i < RWRAP_MAX_RECURSION; i++) {
+			if (rwrap_known_type(rrs[i].type) &&
+			    rrs[i].type == qtype) {
+				ancount++;
+			}
+		}
+		return ancount;
+	}
 
 	/* Include all RRs in the stack until the sought type
 	 * in the answer section. This is the case i.e. when looking
