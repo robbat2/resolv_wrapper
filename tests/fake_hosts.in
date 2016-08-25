@@ -13,5 +13,7 @@ A krb5.cwrap.org 127.0.0.23
 A ns1.cwrap.org 127.0.0.24
 A ns2.cwrap.org 127.0.0.25
 URI _vpn.cwrap.org https://vpn.cwrap.org/VPN 2 5
+URI _vpn.cwrap.org https://vpn2.cwrap.org/VPN 2 10
+URI _vpn.cwrap.org https://vpn3.cwrap.org/VPN 2 20
 URI _ftp.cwrap.org ftp://ftp.cwrap.org/public
 PTR 22.0.0.127.in-addr.arpa www.cwrap.org

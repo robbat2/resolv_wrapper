@@ -371,20 +371,20 @@ static void test_res_fake_uri_query(void **state)
 
 	rv = res_nquery(&dnsstate, "_vpn.cwrap.org", ns_c_in, ns_t_uri,
 			answer, sizeof(answer));
-	assert_in_range(rv, 1, 100);
+	assert_in_range(rv, 1, ANSIZE);
 
 	ns_initparse(answer, sizeof(answer), &handle);
 
 	/*
-	 * The query must finish w/o an error, have one answer and the answer
-	 * must be a parseable RR of type URI and have the priority, weight, and
-	 * URI string as in the hosts file.
+	 * The query must finish w/o an error, have three answers and they must be
+	 * a parseable RR of type URI and have the priority, weight, and URI string
+	 * as in the hosts file.
 	 */
 	assert_int_equal(ns_msg_getflag(handle, ns_f_rcode), ns_r_noerror);
-	assert_int_equal(ns_msg_count(handle, ns_s_an), 1);
+	assert_int_equal(ns_msg_count(handle, ns_s_an), 3);
+
 	assert_int_equal(ns_parserr(&handle, ns_s_an, 0, &rr), 0);
 	assert_int_equal(ns_rr_type(rr), ns_t_uri);
-
 	rrdata = ns_rr_rdata(rr);
 	NS_GET16(prio, rrdata);
 	NS_GET16(weight, rrdata);
@@ -392,6 +392,27 @@ static void test_res_fake_uri_query(void **state)
 	assert_int_equal(prio, 2);
 	assert_int_equal(weight, 5);
 	assert_string_equal(rrdata, "https://vpn.cwrap.org/VPN");
+
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 1, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_uri);
+	rrdata = ns_rr_rdata(rr);
+	NS_GET16(prio, rrdata);
+	NS_GET16(weight, rrdata);
+
+	assert_int_equal(prio, 2);
+	assert_int_equal(weight, 10);
+	assert_string_equal(rrdata, "https://vpn2.cwrap.org/VPN");
+
+	assert_int_equal(ns_parserr(&handle, ns_s_an, 2, &rr), 0);
+	assert_int_equal(ns_rr_type(rr), ns_t_uri);
+	rrdata = ns_rr_rdata(rr);
+	NS_GET16(prio, rrdata);
+	NS_GET16(weight, rrdata);
+
+	assert_int_equal(prio, 2);
+	assert_int_equal(weight, 20);
+	assert_string_equal(rrdata, "https://vpn3.cwrap.org/VPN");
+
 }
 
 /*
