@@ -486,9 +486,8 @@ static ssize_t rwrap_fake_a(struct rwrap_fake_rr *rr,
 	uint8_t *a = answer_ptr;
 	ssize_t resp_size;
 
-	if (rr == NULL || rr->type != ns_t_a) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_a) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding A RR");
@@ -511,9 +510,8 @@ static ssize_t rwrap_fake_aaaa(struct rwrap_fake_rr *rr,
 	uint8_t *a = answer;
 	ssize_t resp_size;
 
-	if (rr == NULL || rr->type != ns_t_aaaa) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_aaaa) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding AAAA RR");
@@ -539,9 +537,8 @@ static ssize_t rwrap_fake_ns(struct rwrap_fake_rr *rr,
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t compressed_len;
 
-	if (rr == NULL || rr->type != ns_t_ns) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_ns) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding NS RR");
@@ -580,9 +577,8 @@ static ssize_t rwrap_fake_srv(struct rwrap_fake_rr *rr,
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t compressed_len;
 
-	if (rr == NULL || rr->type != ns_t_srv) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_srv) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding SRV RR");
@@ -621,9 +617,8 @@ static ssize_t rwrap_fake_uri(struct rwrap_fake_rr *rr,
 	unsigned char uri_compressed[MAXDNAME];
 	ssize_t compressed_len;
 
-	if (rr == NULL || rr->type != ns_t_uri) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_uri) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding URI RR");
@@ -663,9 +658,8 @@ static ssize_t rwrap_fake_soa(struct rwrap_fake_rr *rr,
 	unsigned char mailbox_compressed[MAXDNAME];
 	ssize_t compressed_mb_len;
 
-	if (rr == NULL || rr->type != ns_t_soa) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_soa) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding SOA RR");
@@ -715,9 +709,8 @@ static ssize_t rwrap_fake_cname(struct rwrap_fake_rr *rr,
 	unsigned char hostname_compressed[MAXDNAME];
 	ssize_t rdata_size;
 
-	if (rr == NULL || rr->type != ns_t_cname) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-			  "Malformed record, no or wrong value!\n");
+	if (rr->type != ns_t_cname) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Wrong type!\n");
 		return -1;
 	}
 	RWRAP_LOG(RWRAP_LOG_TRACE, "Adding CNAME RR");
@@ -979,6 +972,11 @@ static ssize_t rwrap_add_rr(struct rwrap_fake_rr *rr,
 			    size_t anslen)
 {
 	ssize_t resp_data;
+
+	if (rr == NULL) {
+		RWRAP_LOG(RWRAP_LOG_ERROR, "Internal error!\n");
+		return -1;
+	}
 
 	switch (rr->type) {
 	case ns_t_a:
