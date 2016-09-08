@@ -1,6 +1,10 @@
 ChangeLog
 ==========
 
+version 1.1.5 (released 2016-09-08)
+  * Added support for faking PTR entries
+  * Added support for faking URI entries
+
 version 1.1.4 (released 2016-05-31)
   * Added support for faking NS entries
   * Fixed some platform compatibility bugs
