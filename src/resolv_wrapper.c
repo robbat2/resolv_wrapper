@@ -853,7 +853,7 @@ static int rwrap_get_record(const char *hostfile, unsigned recursion,
 
 	fp = fopen(hostfile, "r");
 	if (fp == NULL) {
-		RWRAP_LOG(RWRAP_LOG_ERROR,
+		RWRAP_LOG(RWRAP_LOG_WARN,
 			  "Opening %s failed: %s",
 			  hostfile, strerror(errno));
 		return -1;
