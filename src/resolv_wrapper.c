@@ -78,6 +78,7 @@
 enum rwrap_dbglvl_e {
 	RWRAP_LOG_ERROR = 0,
 	RWRAP_LOG_WARN,
+	RWRAP_LOG_NOTICE,
 	RWRAP_LOG_DEBUG,
 	RWRAP_LOG_TRACE
 };
@@ -94,6 +95,7 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 	const char *d;
 	unsigned int lvl = 0;
 	int pid = getpid();
+	const char *prefix = NULL;
 
 	d = getenv("RESOLV_WRAPPER_DEBUGLEVEL");
 	if (d != NULL) {
@@ -110,26 +112,28 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 
 	switch (dbglvl) {
 		case RWRAP_LOG_ERROR:
-			fprintf(stderr,
-				"RWRAP_ERROR(%d) - %s: %s\n",
-				pid, func, buffer);
+			prefix = "RWRAP_ERROR";
 			break;
 		case RWRAP_LOG_WARN:
-			fprintf(stderr,
-				"RWRAP_WARN(%d) - %s: %s\n",
-				pid, func, buffer);
+			prefix = "RWRAP_WARN";
+			break;
+		case RWRAP_LOG_NOTICE:
+			prefix = "RWRAP_NOTICE";
 			break;
 		case RWRAP_LOG_DEBUG:
-			fprintf(stderr,
-				"RWRAP_DEBUG(%d) - %s: %s\n",
-				pid, func, buffer);
+			prefix = "RWRAP_DEBUG";
 			break;
 		case RWRAP_LOG_TRACE:
-			fprintf(stderr,
-				"RWRAP_TRACE(%d) - %s: %s\n",
-				pid, func, buffer);
+			prefix = "RWRAP_TRACE";
 			break;
 	}
+
+	fprintf(stderr,
+		"%s(%d) - %s: %s\n",
+		prefix,
+		pid,
+		func,
+		buffer);
 }
 
 #ifndef SAFE_FREE
