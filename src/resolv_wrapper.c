@@ -100,33 +100,35 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 		lvl = atoi(d);
 	}
 
+	if (lvl < dbglvl) {
+		return;
+	}
+
 	va_start(va, format);
 	vsnprintf(buffer, sizeof(buffer), format, va);
 	va_end(va);
 
-	if (lvl >= dbglvl) {
-		switch (dbglvl) {
-			case RWRAP_LOG_ERROR:
-				fprintf(stderr,
-					"RWRAP_ERROR(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case RWRAP_LOG_WARN:
-				fprintf(stderr,
-					"RWRAP_WARN(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case RWRAP_LOG_DEBUG:
-				fprintf(stderr,
-					"RWRAP_DEBUG(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-			case RWRAP_LOG_TRACE:
-				fprintf(stderr,
-					"RWRAP_TRACE(%d) - %s: %s\n",
-					pid, func, buffer);
-				break;
-		}
+	switch (dbglvl) {
+		case RWRAP_LOG_ERROR:
+			fprintf(stderr,
+				"RWRAP_ERROR(%d) - %s: %s\n",
+				pid, func, buffer);
+			break;
+		case RWRAP_LOG_WARN:
+			fprintf(stderr,
+				"RWRAP_WARN(%d) - %s: %s\n",
+				pid, func, buffer);
+			break;
+		case RWRAP_LOG_DEBUG:
+			fprintf(stderr,
+				"RWRAP_DEBUG(%d) - %s: %s\n",
+				pid, func, buffer);
+			break;
+		case RWRAP_LOG_TRACE:
+			fprintf(stderr,
+				"RWRAP_TRACE(%d) - %s: %s\n",
+				pid, func, buffer);
+			break;
 	}
 }
 
