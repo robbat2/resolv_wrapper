@@ -1196,8 +1196,9 @@ static int rwrap_res_fake_hosts(const char *hostfile,
 		resp_size = rwrap_fake_empty(type, rrs->key, answer, anslen);
 		break;
 	default:
-		RWRAP_LOG(RWRAP_LOG_ERROR,
-				"Error searching for [%s]\n", query_name);
+		RWRAP_LOG(RWRAP_LOG_NOTICE,
+			  "Searching for [%s] did not return any results\n",
+			  query_name);
 		free(query_name);
 		return -1;
 	}
