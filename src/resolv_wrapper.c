@@ -82,10 +82,6 @@ enum rwrap_dbglvl_e {
 	RWRAP_LOG_TRACE
 };
 
-#ifdef NDEBUG
-# define RWRAP_LOG(...)
-#else /* NDEBUG */
-
 static void rwrap_log(enum rwrap_dbglvl_e dbglvl, const char *func, const char *format, ...) PRINTF_ATTRIBUTE(3, 4);
 # define RWRAP_LOG(dbglvl, ...) rwrap_log((dbglvl), __func__, __VA_ARGS__)
 
@@ -133,7 +129,6 @@ static void rwrap_log(enum rwrap_dbglvl_e dbglvl,
 		}
 	}
 }
-#endif /* NDEBUG RWRAP_LOG */
 
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free(x); (x)=NULL;} } while(0)
