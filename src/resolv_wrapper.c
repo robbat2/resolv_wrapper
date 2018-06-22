@@ -1,6 +1,6 @@
 /*
- * Copyright (c) 2014      Andreas Schneider <asn@samba.org>
- * Copyright (c) 2014      Jakub Hrozek <jakub.hrozek@posteo.se>
+ * Copyright (c) 2014-2018 Andreas Schneider <asn@samba.org>
+ * Copyright (c) 2014-2016 Jakub Hrozek <jakub.hrozek@posteo.se>
  *
  * All rights reserved.
  *
