@@ -52,16 +52,12 @@ check_include_file(resolv.h HAVE_RESOLV_H)
 check_include_file(arpa/nameser.h HAVE_ARPA_NAMESER_H)
 
 # FUNCTIONS
-set(CMAKE_REQUIRED_LIBRARIES)
-
 find_library(RESOLV_LIRBRARY resolv)
-
 if (RESOLV_LIRBRARY)
     check_library_exists(${RESOLV_LIRBRARY} res_send "" RES_SEND_IN_LIBRESOLV)
     check_library_exists(${RESOLV_LIRBRARY} __res_send "" __RES_SEND_IN_LIBRESOLV)
     if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
         set(HAVE_LIBRESOLV TRUE)
-        set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
     endif()
 endif()
 
@@ -100,26 +96,25 @@ check_symbol_exists(ns_name_compress "sys/types.h;arpa/nameser.h" HAVE_NS_NAME_C
 if (UNIX)
     if (NOT LINUX)
         # libsocket (Solaris)
-        check_library_exists(socket getaddrinfo "" HAVE_LIBSOCKET)
-        if (HAVE_LIBSOCKET)
-          set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} socket)
-        endif (HAVE_LIBSOCKET)
+        find_library(SOCKET_LIBRARY socket)
+        if (SOCKET_LIBRARY)
+            check_library_exists(${SOCKET_LIBRARY} getaddrinfo "" HAVE_LIBSOCKET)
+        endif()
 
         # libnsl/inet_pton (Solaris)
-        check_library_exists(nsl inet_pton "" HAVE_LIBNSL)
-        if (HAVE_LIBNSL)
-            set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} nsl)
-        endif (HAVE_LIBNSL)
+        find_library(NSL_LIBRARY nsl)
+        if (NSL_LIBRARY)
+            check_library_exists(${NSL_LIBRARY} inet_pton "" HAVE_LIBNSL)
+        endif()
     endif (NOT LINUX)
 
     check_function_exists(getaddrinfo HAVE_GETADDRINFO)
 endif (UNIX)
 
-check_library_exists(dl dlopen "" HAVE_LIBDL)
-if (HAVE_LIBDL)
-    find_library(DLFCN_LIBRARY dl)
-    set(CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ${DLFCN_LIBRARY})
-endif (HAVE_LIBDL)
+find_library(DLFCN_LIBRARY dl)
+if (DLFCN_LIBRARY)
+    check_library_exists(${DLFCN_LIBRARY} dlopen "" HAVE_LIBDL)
+endif()
 
 # IPV6
 check_c_source_compiles("
@@ -177,4 +172,4 @@ int main(void) {
 # ENDIAN
 test_big_endian(WORDS_BIGENDIAN)
 
-set(RWRAP_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} CACHE INTERNAL "resolv_wrapper required system libraries")
+set(RWRAP_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY} ${DLFCN_LIBRARY} ${SOCKET_LIBRARY} ${NSL_LIBRARY} CACHE INTERNAL "resolv_wrapper required system libraries")
