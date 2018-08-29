@@ -59,6 +59,9 @@ if (RESOLV_LIRBRARY)
     if (RES_SEND_IN_LIBRESOLV OR __RES_SEND_IN_LIBRESOLV)
         set(HAVE_LIBRESOLV TRUE)
     endif()
+
+    # If we have a libresolv, we need to check functions linking the library
+    set(CMAKE_REQUIRED_LIBRARIES ${RESOLV_LIRBRARY})
 endif()
 
 check_function_exists(res_init HAVE_RES_INIT)
@@ -90,6 +93,8 @@ check_function_exists(__res_search HAVE___RES_SEARCH)
 
 check_function_exists(res_nsearch HAVE_RES_NSEARCH)
 check_function_exists(__res_nsearch HAVE___RES_NSEARCH)
+
+unset(CMAKE_REQUIRED_LIBRARIES)
 
 check_symbol_exists(ns_name_compress "sys/types.h;arpa/nameser.h" HAVE_NS_NAME_COMPRESS)
 
