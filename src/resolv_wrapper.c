@@ -1296,7 +1296,6 @@ enum rwrap_lib {
     RWRAP_LIBRESOLV
 };
 
-#ifndef NDEBUG
 static const char *rwrap_str_lib(enum rwrap_lib lib)
 {
 	switch (lib) {
@@ -1309,7 +1308,6 @@ static const char *rwrap_str_lib(enum rwrap_lib lib)
 	/* Compiler would warn us about unhandled enum value if we get here */
 	return "unknown";
 }
-#endif
 
 static void *rwrap_load_lib_handle(enum rwrap_lib lib)
 {
